@@ -204,35 +204,36 @@ class PandasExecutor(Executor):
                 # if color is specified, need to group by groupby_attr and color_attr
 
                 if has_color:
-                    vis._vis_data = (
-                        vis.data.groupby(
-                            [groupby_attr.attribute, color_attr.attribute], dropna=False, history=False
-                        )
-                        .count()
-                        .reset_index()
-                        .rename(columns={index_name: "Record"})
-                    )
-                    vis._vis_data = vis.data[[groupby_attr.attribute, color_attr.attribute, "Record"]]
+                    size_result = vis.data.groupby(
+                        [groupby_attr.attribute, color_attr.attribute], dropna=False, history=False
+                    ).size()
+                    # Explicitly set index names since LuxDataFrameGroupBy may lose them
+                    size_result.index.names = [groupby_attr.attribute, color_attr.attribute]
+                    vis._vis_data = size_result.reset_index(name="Record")
                 else:
-                    vis._vis_data = (
-                        vis.data.groupby(groupby_attr.attribute, dropna=False, history=False)
-                        .count()
-                        .reset_index()
-                        .rename(columns={index_name: "Record"})
-                    )
-                    vis._vis_data = vis.data[[groupby_attr.attribute, "Record"]]
+                    size_result = vis.data.groupby(
+                        groupby_attr.attribute, dropna=False, history=False
+                    ).size()
+                    # Explicitly set index name since LuxDataFrameGroupBy may lose it
+                    size_result.index.name = groupby_attr.attribute
+                    vis._vis_data = size_result.reset_index(name="Record")
             else:
                 # if color is specified, need to group by groupby_attr and color_attr
                 if has_color:
                     groupby_result = vis.data.groupby(
                         [groupby_attr.attribute, color_attr.attribute], dropna=False, history=False
                     )
+                    agg_result = groupby_result.agg(agg_func)
+                    # Explicitly set index names since LuxDataFrameGroupBy may lose them
+                    agg_result.index.names = [groupby_attr.attribute, color_attr.attribute]
                 else:
                     groupby_result = vis.data.groupby(
                         groupby_attr.attribute, dropna=False, history=False
                     )
-                groupby_result = groupby_result.agg(agg_func)
-                intermediate = groupby_result.reset_index()
+                    agg_result = groupby_result.agg(agg_func)
+                    # Explicitly set index name since LuxDataFrameGroupBy may lose it
+                    agg_result.index.name = groupby_attr.attribute
+                intermediate = agg_result.reset_index()
                 vis._vis_data = intermediate.__finalize__(vis.data)
             result_vals = list(vis.data[groupby_attr.attribute])
             # create existing group by attribute combinations if color is specified

@@ -3,6 +3,7 @@
 .vscode/
 doc/_build
 ./venv
+./.venv
 # Jupyter Widget
 node_modules/
 dist/
@@ -13,3 +14,9 @@ build/
 .idea/
 tests/.coverage
 tests/coverage.xml
+
+venv
+.venv
+
+# toy notebook
+playground.ipynb

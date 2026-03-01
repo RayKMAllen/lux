@@ -25,48 +25,54 @@ originalSeries = pd.core.series.Series
 
 def setOption(overridePandas=True):
     if overridePandas:
-        pd.DataFrame = (
-            pd.io.json._json.DataFrame
-        ) = (
-            pd.io.sql.DataFrame
-        ) = (
-            pd.io.excel.DataFrame
-        ) = (
-            pd.io.formats.DataFrame
-        ) = (
-            pd.io.sas.DataFrame
-        ) = (
-            pd.io.clipboards.DataFrame
-        ) = (
-            pd.io.common.DataFrame
-        ) = (
-            pd.io.feather_format.DataFrame
-        ) = (
-            pd.io.gbq.DataFrame
-        ) = (
-            pd.io.html.DataFrame
-        ) = (
-            pd.io.orc.DataFrame
-        ) = (
-            pd.io.parquet.DataFrame
-        ) = (
-            pd.io.pickle.DataFrame
-        ) = (
-            pd.io.pytables.DataFrame
-        ) = (
-            pd.io.spss.DataFrame
-        ) = (
-            pd.io.stata.DataFrame
-        ) = pd.io.api.DataFrame = pd.core.frame.DataFrame = pd._testing.DataFrame = LuxDataFrame
-        if pd.__version__ < "1.3.0":
-            pd.io.parsers.DataFrame = LuxDataFrame
-        else:
-            pd.io.parsers.readers.DataFrame = LuxDataFrame
-        pd.Series = pd.core.series.Series = pd.core.groupby.ops.Series = pd._testing.Series = LuxSeries
+        # Core DataFrame overrides
+        pd.DataFrame = pd.core.frame.DataFrame = LuxDataFrame
+        
+        # Override DataFrame in io modules that exist in this pandas version
+        io_modules = [
+            'api', 'clipboards', 'common', 'excel', 'feather_format',
+            'formats', 'html', 'orc', 'parquet', 'pickle', 'pytables',
+            'sas', 'spss', 'sql', 'stata'
+        ]
+        for mod_name in io_modules:
+            if hasattr(pd.io, mod_name):
+                mod = getattr(pd.io, mod_name)
+                if hasattr(mod, 'DataFrame'):
+                    setattr(mod, 'DataFrame', LuxDataFrame)
+        
+        # Handle json module (nested path)
+        if hasattr(pd.io, 'json') and hasattr(pd.io.json, '_json'):
+            if hasattr(pd.io.json._json, 'DataFrame'):
+                pd.io.json._json.DataFrame = LuxDataFrame
+        
+        # Handle parsers based on pandas version
+        if hasattr(pd.io, 'parsers'):
+            if hasattr(pd.io.parsers, 'readers') and hasattr(pd.io.parsers.readers, 'DataFrame'):
+                pd.io.parsers.readers.DataFrame = LuxDataFrame
+            elif hasattr(pd.io.parsers, 'DataFrame'):
+                pd.io.parsers.DataFrame = LuxDataFrame
+        
+        # Handle _testing module if it exists
+        if hasattr(pd, '_testing') and hasattr(pd._testing, 'DataFrame'):
+            pd._testing.DataFrame = LuxDataFrame
+        if hasattr(pd, '_testing') and hasattr(pd._testing, 'Series'):
+            pd._testing.Series = LuxSeries
+        
+        # Series overrides
+        pd.Series = pd.core.series.Series = LuxSeries
+        if hasattr(pd.core.groupby, 'ops') and hasattr(pd.core.groupby.ops, 'Series'):
+            pd.core.groupby.ops.Series = LuxSeries
+        
+        # GroupBy overrides
         pd.core.groupby.generic.DataFrameGroupBy = LuxDataFrameGroupBy
         pd.core.groupby.generic.SeriesGroupBy = LuxSeriesGroupBy
     else:
-        pd.DataFrame = pd.io.parsers.DataFrame = pd.core.frame.DataFrame = originalDF
+        pd.DataFrame = pd.core.frame.DataFrame = originalDF
+        if hasattr(pd.io, 'parsers'):
+            if hasattr(pd.io.parsers, 'readers'):
+                pd.io.parsers.readers.DataFrame = originalDF
+            elif hasattr(pd.io.parsers, 'DataFrame'):
+                pd.io.parsers.DataFrame = originalDF
         pd.Series = originalSeries
 
 
